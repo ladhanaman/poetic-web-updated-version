@@ -1,0 +1,10 @@
+groq
+python-dotenv
+pinecone>=3.0.0
+google-generativeai
+typing-extensions
+Pillow
+edge-tts
+streamlit
+watchdog
+gTTS
