@@ -3,6 +3,7 @@ import os
 import time
 from PIL import Image
 
+from scripts.architect import RAGArchitect
 from scripts.vision_client import analyze_image
 from scripts.retriever import retrieve_poems, get_embedding
 from scripts.generator import generate_poem
@@ -38,10 +39,14 @@ def run_vision_cached(image_file):
         return f"Error: {e}"
 
 # --- Session State ---
-keys = ['narrative', 'retrieved_items', 'generated_poem', 'audio_bytes', 'last_upload_id', 'query_vector']
+keys = ['narrative', 'retrieved_items', 'generated_poem', 'audio_bytes', 'last_upload_id', 'critique']
 for k in keys:
     if k not in st.session_state:
         st.session_state[k] = None
+
+# Initialize Architect (Lazy Loading)
+if 'rag_architect' not in st.session_state:
+    st.session_state.rag_architect = RAGArchitect()
 
 # ==========================================
 # 1. SIDEBAR (Controls Only)
@@ -144,13 +149,22 @@ if image_source:
 
                 #Memory Retrieval
                 if not st.session_state.retrieved_items:
-                    with st.spinner("Task: Vector Search (Pinecone)..."):
+                    with st.status("[SYSTEM] Architect: Selecting References...", expanded=True) as s:
                         
-                        st.session_state.retrieved_items = retrieve_poems(st.session_state.narrative)
-                        # We still generate the vector for internal consistency, 
-                        # even though visualization is removed.
-                        st.session_state.query_vector = get_embedding(st.session_state.narrative)
-
+                        # A. Retrieve Wide (Fetch 15 candidates)
+                        st.write("1. Retrieving top 15 candidates from Pinecone...")
+                        raw_candidates = retrieve_poems(st.session_state.narrative, top_k=15)
+                        
+                        # B. Re-rank Smart (Select top 3)
+                        st.write("2. RAG Architect: Reading & Filtering...")
+                        selected_candidates = st.session_state.rag_architect.select_best_candidates(
+                            st.session_state.narrative, 
+                            raw_candidates,
+                            top_k=3
+                        )
+                        
+                        st.session_state.retrieved_items = selected_candidates
+                        s.update(label="[SYSTEM] Reference Selection Complete", state="complete", expanded=False)
     # --- CARD 3: GENERATIVE INFERENCE ---
     with col3:
         with st.container(border=True):
@@ -182,7 +196,7 @@ if image_source:
 
     if st.button("Generate poem with voice", type="primary", use_container_width=True):
     
-#TEXT GENERATION
+        # 1. TEXT GENERATION
         with st.status("Drafting Poem...", expanded=True) as status:
             st.write("Task: Text Inference (Llama-3-70b)")
         
@@ -191,9 +205,17 @@ if image_source:
                 st.session_state.retrieved_items,
                 temperature=temperature
             )
-            status.update(label="Poem Drafted!", state="complete", expanded=False)
+            
+            # 2. CRITIQUE (The New Step)
+            st.write("Task: AI Critic Evaluation...")
+            st.session_state.critique = st.session_state.rag_architect.evaluate_quality(
+                st.session_state.narrative,
+                st.session_state.generated_poem
+            )
+            
+            status.update(label="Poem Drafted & Verified!", state="complete", expanded=False)
 
-#IMMEDIATE RENDER
+        # 3. RENDER POEM
         if st.session_state.generated_poem:
             clean_poem = st.session_state.generated_poem.replace("- ", "— ")
         
@@ -201,8 +223,16 @@ if image_source:
                 f"<div style='text-align: center; font-style: italic; padding: 10px; font-family: serif;'>{clean_poem}</div>", 
                 unsafe_allow_html=True
             )
+            
+            # 4. SHOW CRITIQUE SCORECARD
+            if st.session_state.critique:
+                c = st.session_state.critique
+                with st.expander(f"AI Critic Score: {c.get('relevance_score', 0)}/5", expanded=False):
+                    st.caption(f"**Style Score:** {c.get('style_score', 0)}/5")
+                    st.caption(f"**Hallucinated:** {c.get('is_hallucinated', False)}")
+                    st.write(f"**Feedback:** {c.get('feedback', 'No feedback.')}")
 
-#AUDIO GENERATION (Background Task)
+        # 5. AUDIO GENERATION
         if AUDIO_AVAILABLE and st.session_state.generated_poem:
         # Create a placeholder for the audio player so it pops in later
             audio_placeholder = st.empty()
@@ -212,7 +242,7 @@ if image_source:
                 st.session_state.audio_bytes = audio.synthesize(st.session_state.generated_poem)
                 audio_status.update(label="Audio Ready", state="complete")
         
-#Replace the status spinner with the actual Audio Player
+            #Replace the status spinner with the actual Audio Player
             if st.session_state.audio_bytes:
                 audio_placeholder.audio(st.session_state.audio_bytes, format="audio/mpeg")
 
