@@ -1,19 +1,13 @@
 import os
 import json
 import time
+import argparse
 from groq import Groq
 from dotenv import load_dotenv
 
 load_dotenv()
-
-
-GROQ_API_KEY = os.getenv("GROQ_API_KEY") 
-
-client = Groq(api_key=GROQ_API_KEY)
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 MODEL_NAME = "llama-3.3-70b-versatile"
-
-INPUT_FILE = "data/dickinson_clean.txt"
-OUTPUT_FILE = "data/dickinson_metadata_dense.json"
 
 def get_dense_tags(poem_text):
     """
@@ -55,81 +49,68 @@ def get_dense_tags(poem_text):
         print(f"Error extracting tags: {e}")
         return None
 
-def load_existing_data():
-    """Loads progress so we can resume if crashed."""
-    if os.path.exists(OUTPUT_FILE):
+def load_existing_data(output_file):
+    if os.path.exists(output_file):
         try:
-            with open(OUTPUT_FILE, "r", encoding="utf-8") as f:
-                content = f.read().strip()
-                if content:
-                    return json.loads(content)
-        except json.JSONDecodeError:
-            print("JSON file corrupted or empty. Starting fresh.")
+            with open(output_file, "r", encoding="utf-8") as f:
+                return json.loads(f.read().strip() or "[]")
+        except:
             return []
     return []
 
 def main():
-    if not os.path.exists(INPUT_FILE):
-        print(f"Could not find {INPUT_FILE}. Run ingestion script first.")
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input", required=True, help="Cleaned .txt file")
+    parser.add_argument("--output", required=True, help="Output .json file")
+    parser.add_argument("--loose", action="store_true", help="Disable strict line-length checks (for Whitman)")
+    args = parser.parse_args()
+
+    if not os.path.exists(args.input):
+        print(f"File not found: {args.input}")
         return
 
-    # 1. Load Raw Poems
     print("Loading poems...")
-    with open(INPUT_FILE, "r", encoding="utf-8") as f:
-        raw_data = f.read()
-        all_poems = raw_data.split("\n---POEM_SEPARATOR---\n")
+    with open(args.input, "r", encoding="utf-8") as f:
+        all_poems = f.read().split("\n---POEM_SEPARATOR---\n")
 
-    # 2. Check Progress
-    processed_data = load_existing_data()
+    processed_data = load_existing_data(args.output)
     start_index = len(processed_data)
     
-    print(f"Found {start_index} poems already processed.")
-    print(f"Starting Deep Analysis on remaining {len(all_poems) - start_index} poems using {MODEL_NAME}...")
+    print(f"Resuming from index {start_index}...")
 
-    # 3. Processing Loop
     for i in range(start_index, len(all_poems)):
         poem = all_poems[i].strip()
         
-        # --- PROSE FILTER ---
+        # --- LOGIC UPDATE FOR WHITMAN ---
         lines = poem.split('\n')
-        if len(lines) > 0:
-            avg_line_len = sum(len(line) for line in lines) / len(lines)
-        else:
-            avg_line_len = 0
-
-        # Filter Condition
-        if len(poem) < 10 or avg_line_len > 65:
-            print(f"  Skipping Poem #{i+1} (Prose/Note detected)")
-            
-            entry = {"id": f"poem_{i:04d}", "status": "skipped"}
-            processed_data.append(entry)
-            
-            with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+        avg_line_len = sum(len(l) for l in lines) / len(lines) if lines else 0
+        
+        # If --loose is set (Whitman), we allow longer lines (up to 200 chars)
+        max_len = 200 if args.loose else 65 
+        
+        if len(poem) < 10 or avg_line_len > max_len:
+            print(f"  Skipping Poem #{i+1} (Filter: {avg_line_len:.1f} chars/line)")
+            processed_data.append({"id": f"poem_{i:04d}", "status": "skipped"})
+            # Save placeholder to maintain index alignment
+            with open(args.output, "w", encoding="utf-8") as f:
                 json.dump(processed_data, f, indent=2)
             continue
 
-        print(f"Thinking about Poem #{i+1}...")
-        
+        print(f"Tagging Poem #{i+1}...")
         tags = get_dense_tags(poem)
         
         if tags:
-            entry = {
+            processed_data.append({
                 "id": f"poem_{i:04d}",
                 "text": poem,
                 "metadata": tags 
-            }
-            processed_data.append(entry)
-            
-            with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+            })
+            with open(args.output, "w", encoding="utf-8") as f:
                 json.dump(processed_data, f, indent=2)
-            
-  
             time.sleep(0.5)
         else:
-            print("Failed to tag. Saving progress and stopping.")
+            print("Failed. Saving and stopping.")
             break
-
-    print(f"Script finished. Total database size: {len(processed_data)}")
 
 if __name__ == "__main__":
     main()

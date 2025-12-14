@@ -1,4 +1,5 @@
-import re
+import sys
+import argparse
 from pathlib import Path
 
 
@@ -63,9 +64,17 @@ def clean_and_split(raw_text: str) -> list[str]:
     return valid_poems
 
 def main():
-    print(f"Loading: {INPUT_FILE}")
+    parser = argparse.ArgumentParser(description="Clean raw Project Gutenberg text files.")
+    parser.add_argument("--input", required=True, help="Path to raw input .txt file")
+    parser.add_argument("--output", required=True, help="Path to save cleaned .txt file")
+    args = parser.parse_args()
+
+    input_path = Path(args.input)
+    output_path = Path(args.output)
+
+    print(f"Loading: {input_path}")
     try:
-        raw_text = load_text(INPUT_FILE)
+        raw_text = load_text(input_path)
     except Exception as e:
         print(e)
         return
@@ -75,16 +84,10 @@ def main():
     
     print(f"Extracted {len(poems)} poems.")
     
-    # Save to a clean file for inspection
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
-        # We separate poems with a custom delimiter for the next step
+    with open(output_path, "w", encoding="utf-8") as f:
         f.write("\n---POEM_SEPARATOR---\n".join(poems))
         
-    print(f"Saved clean dataset to {OUTPUT_FILE}")
-    print("\nPREVIEW (First Poem):")
-    print("-" * 20)
-    print(poems[0])
-    print("-" * 20)
+    print(f"Saved clean dataset to {output_path}")
 
 if __name__ == "__main__":
     main()
