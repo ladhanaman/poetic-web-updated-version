@@ -150,21 +150,26 @@ if image_source:
                 #Memory Retrieval
                 if not st.session_state.retrieved_items:
                     with st.status("[SYSTEM] Architect: Selecting References...", expanded=True) as s:
-                        
-                        # A. Retrieve Wide (Fetch 15 candidates)
+                    
                         st.write("1. Retrieving top 15 candidates from Pinecone...")
                         raw_candidates = retrieve_poems(st.session_state.narrative, top_k=15)
-                        
-                        # B. Re-rank Smart (Select top 3)
+                    
                         st.write("2. RAG Architect: Reading & Filtering...")
                         selected_candidates = st.session_state.rag_architect.select_best_candidates(
                             st.session_state.narrative, 
                             raw_candidates,
                             top_k=3
                         )
-                        
+                    
                         st.session_state.retrieved_items = selected_candidates
                         s.update(label="[SYSTEM] Reference Selection Complete", state="complete", expanded=False)
+            
+                # 2. Persistent State (If data exists)
+                else:
+                    with st.status("[SYSTEM] Memory Active", state="complete", expanded=False):
+                        st.write("1. Vector Search: Complete")
+                        st.write("2. Architect Filtering: Complete")
+                        st.write(f"✓ {len(st.session_state.retrieved_items)} References Locked")
     # --- CARD 3: GENERATIVE INFERENCE ---
     with col3:
         with st.container(border=True):
