@@ -52,6 +52,24 @@ if 'rag_architect' not in st.session_state:
 # 1. SIDEBAR (Controls Only)
 # ==========================================
 with st.sidebar:
+
+    st.header("Poet Persona")
+    # Mapping UI Name -> Pinecone Namespace
+    poet_map = {
+        "Emily Dickinson": "dickinson",
+        "Percy Bysshe Shelley": "shelley",
+        "Walt Whitman": "whitman" # Future proofing
+    }
+    
+    selected_poet_name = st.selectbox(
+        "Choose your Muse",
+        options=list(poet_map.keys()),
+        index=0 # Default to Dickinson
+    )
+    
+    # Get the actual namespace string (e.g., 'shelley')
+    target_namespace = poet_map[selected_poet_name]
+
     st.header("Input Configuration")
     
     #Select Mode
@@ -151,8 +169,14 @@ if image_source:
                 if not st.session_state.retrieved_items:
                     with st.status("[SYSTEM] Architect: Selecting References...", expanded=True) as s:
                     
-                        st.write("1. Retrieving top 15 candidates from Pinecone...")
-                        raw_candidates = retrieve_poems(st.session_state.narrative, top_k=15)
+                        st.write(f"1. Retrieving top 15 candidates from namespace: {target_namespace}...")
+                        
+                        # --- UPDATED CALL ---
+                        raw_candidates = retrieve_poems(
+                            st.session_state.narrative, 
+                            top_k=15, 
+                            namespace=target_namespace 
+                        )
                     
                         st.write("2. RAG Architect: Reading & Filtering...")
                         selected_candidates = st.session_state.rag_architect.select_best_candidates(

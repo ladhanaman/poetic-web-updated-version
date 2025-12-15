@@ -32,11 +32,11 @@ def get_embedding(text: str) -> List[float]:
         print(f"Embedding Error: {e}")
         return []
 
-def retrieve_poems(query_narrative: str, top_k=3) -> List[Dict[str, Any]]:
+def retrieve_poems(query_narrative: str, top_k=3, namespace = None) -> List[Dict[str, Any]]:
     """
     Pure Vector Search. Fast and efficient.
     """
-    print(f"\nSearching Pinecone for: '{query_narrative}'")
+    print(f"\nSearching Pinecone for: '{query_narrative}' in namespace: '{namespace}'")
 
     vector = get_embedding(query_narrative)
     if not vector:
@@ -47,7 +47,8 @@ def retrieve_poems(query_narrative: str, top_k=3) -> List[Dict[str, Any]]:
             vector=vector,
             top_k=top_k,
             include_metadata=True,
-            include_values=True
+            include_values=True,
+            namespace=namespace
         )
     except Exception as e:
         print(f"Pinecone Error: {e}")
