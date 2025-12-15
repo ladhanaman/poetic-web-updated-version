@@ -99,28 +99,53 @@ class RAGArchitect:
             # Graceful Degradation: If Re-ranker crashes, just give the first 3 (Pinecone's best guess)
             return candidates[:top_k]
 
-    def evaluate_quality(self, vision_narrative: str, generated_poem: str) -> Dict[str, Any]:
+    def evaluate_quality(self, vision_narrative: str, generated_poem: str, poet_name: str) -> Dict[str, Any]:
         """
-        The 'Critic'. Judges the generated poem against the visual input.
-        Returns a scorecard.
+        The 'Critic'. Judges the generated poem based on the SPECIFIC poet's style.
         """
-        system_prompt = """
-        You are a Literary Critic. specific in Emily Dickinson's style.
+        
+        system_prompt = f"""
+        You are a Literary Critic specializing in the works of {poet_name}.
         Analyze the Generated Poem against the Vision Narrative.
         
         Rubric:
         - Relevance (1-5): Does it describe the scene?
-        - Style (1-5): Does it use dashes (—) and capitalization?
+        - Style (1-5): Does it sounded like {poet_name}? 
+          (e.g., if Dickinson, look for dashes. If Whitman, look for free verse).
         - Hallucination (Boolean): Is it coherent?
         
         Return JSON:
-        {
+        {{
             "relevance_score": int,
             "style_score": int,
             "is_hallucinated": bool,
             "feedback": "string"
-        }
+        }}
         """
+
+        user_prompt = f"""
+        VISION NARRATIVE:
+        {vision_narrative}
+
+        GENERATED POEM:
+        {generated_poem}
+        """
+
+        try:
+            response = self.client.chat.completions.create(
+                model=self.model,
+                messages=[
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                temperature=0.2,
+                response_format={"type": "json_object"}
+            )
+            return json.loads(response.choices[0].message.content)
+            
+        except Exception as e:
+            print(f"[ERROR] Critique failed: {e}")
+            return {"relevance_score": 0, "feedback": "Error in critique."}
 
         user_prompt = f"""
         VISION NARRATIVE:
