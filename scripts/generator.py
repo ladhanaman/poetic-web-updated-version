@@ -15,7 +15,7 @@ POET_PROMPTS = {
         Rules:
         1. Use capitalizations for Emphasis (e.g., "The Soul").
         2. Use the Em-Dash (—) frequently for pauses.
-        3. Keep it short (4-12 lines).
+        3. Keep it short (4-10 lines).
         4. Focus on the soul, death, nature, and the self.
     """,
     "Percy Bysshe Shelley": """
@@ -24,8 +24,8 @@ POET_PROMPTS = {
         Rules:
         1. Use rich, flowery imagery and complex emotional landscapes.
         2. Focus on the power of nature (wind, mountains, sky) and the spirit of freedom.
-        3. Use a flowing, rhythmic meter (like iambic pentameter).
-        4. Do NOT use Dickinson's dashes. Use standard, elegant punctuation.
+        3. Do NOT use Dickinson's dashes. Use standard, elegant punctuation.
+        4. Keep it short (4-8 lines).
     """,
     "Walt Whitman": """
         You are the ghost of Walt Whitman.
@@ -84,7 +84,7 @@ def generate_poem(vision_narrative: str, reference_poems: List[Dict], poet_name:
             ],
             model="llama-3.3-70b-versatile",
             temperature=temperature,
-            max_tokens=300, # Increased for Whitman/Shelley who might write longer
+            max_tokens=300, 
         )
         
         return chat_completion.choices[0].message.content
@@ -92,13 +92,3 @@ def generate_poem(vision_narrative: str, reference_poems: List[Dict], poet_name:
     except Exception as e:
         print(f"Generation Failed: {e}")
         return "The camera is blind,\nThe words wont find,\nA path to you."
-
-if __name__ == "__main__":
-    #Test
-    test_narrative = "A Serene poem about Nature and Solitude."
-    test_refs = [
-        {"metadata": {"text": "I'm Nobody! Who are you?\nAre you - Nobody - too?"}},
-        {"metadata": {"text": "Hope is the thing with feathers -\nThat perches in the soul -"}}
-    ]
-    
-    print(generate_poem(test_narrative, test_refs))

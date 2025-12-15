@@ -6,13 +6,15 @@ import google.generativeai as genai
 
 load_dotenv()
 
-# Configuration
+# --- Configuration ---
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX_NAME = "poetic-camera"
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
+# Best Practice: Fallback to v2 if .env is missing, but prefer env var
+PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "poetic-camera-v2")
+
 # Initialize Systems
-print("Connecting to Pinecone...")
+print(f"Connecting to Pinecone Index: {PINECONE_INDEX_NAME}...")
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index(PINECONE_INDEX_NAME)
 
@@ -32,11 +34,11 @@ def get_embedding(text: str) -> List[float]:
         print(f"Embedding Error: {e}")
         return []
 
-def retrieve_poems(query_narrative: str, top_k=3, namespace = None) -> List[Dict[str, Any]]:
+def retrieve_poems(query_narrative: str, top_k=3, namespace=None) -> List[Dict[str, Any]]:
     """
     Pure Vector Search. Fast and efficient.
     """
-    print(f"\nSearching Pinecone for: '{query_narrative}' in namespace: '{namespace}'")
+    print(f"\nSearching Pinecone '{PINECONE_INDEX_NAME}' for: '{query_narrative}' (Namespace: {namespace})")
 
     vector = get_embedding(query_narrative)
     if not vector:
@@ -47,7 +49,7 @@ def retrieve_poems(query_narrative: str, top_k=3, namespace = None) -> List[Dict
             vector=vector,
             top_k=top_k,
             include_metadata=True,
-            include_values=True,
+            include_values=False, # OPTIMIZATION: Set to False to save bandwidth
             namespace=namespace
         )
     except Exception as e:
