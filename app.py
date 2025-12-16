@@ -45,7 +45,8 @@ def run_vision_cached(image_file):
         return f"Error: {e}"
 
 # --- Session State Initialization ---
-keys = ['narrative', 'retrieved_items', 'generated_poem', 'audio_bytes', 'last_upload_id', 'critique']
+# REMOVED: 'critique' from keys
+keys = ['narrative', 'retrieved_items', 'generated_poem', 'audio_bytes', 'last_upload_id']
 for k in keys:
     if k not in st.session_state:
         st.session_state[k] = None
@@ -101,7 +102,8 @@ with st.sidebar:
 # MAIN LOGIC
 # ==========================================
 st.title("Poetic Camera")
-st.caption("System Status: Online | Mode: Text-to-Audio RAG")
+# UPDATED: Reflected new mode
+st.caption("System Status: Online | Mode: Production RAG (Cohere Powered)")
 
 # --- CAMERA HANDLING ---
 image_source = None
@@ -125,7 +127,7 @@ if image_source:
         st.session_state.retrieved_items = None
         st.session_state.generated_poem = None
         st.session_state.audio_bytes = None 
-        st.session_state.critique = None
+        # REMOVED: st.session_state.critique cleanup
         st.session_state.last_upload_id = file_id
 
     # Layout: 3 Columns
@@ -184,7 +186,8 @@ if image_source:
                             namespace=target_namespace 
                         )
                     
-                        st.write("2. RAG Architect: Reading & Filtering...")
+                        # UPDATED: Text to reflect Cohere usage
+                        st.write("2. Cohere Architect: Semantic Re-ranking...")
                         selected_candidates = st.session_state.rag_architect.select_best_candidates(
                             st.session_state.narrative, 
                             raw_candidates,
@@ -198,8 +201,7 @@ if image_source:
                 else:
                     with st.status("[SYSTEM] Memory Active", state="complete", expanded=False):
                         st.write("1. Vector Search: Complete")
-                        st.write("2. Architect Filtering: Complete")
-                        # st.write(f"✓ {len(st.session_state.retrieved_items)} References Locked")
+                        st.write("2. Cohere Reranking: Complete")
 
     # --- CARD 3: GENERATIVE INFERENCE ---
     with col3:
@@ -219,6 +221,11 @@ if image_source:
                         meta = m.get('metadata', {})
                         raw_title = meta.get('title', f"{i+1}")
                         clean_text = meta.get('text', "No text.").strip()
+                        
+                        # Optional: Display Relevance Score if available (added by Cohere)
+                        score_display = ""
+                        if 'relevance_score' in m:
+                            score_display = f" [Rel: {m['relevance_score']:.3f}]"
 
                         # Clean up title formatting
                         clean_title = raw_title
@@ -226,12 +233,11 @@ if image_source:
                             clean_title = clean_title.lower().replace("poem poem", "Poem").title()
                         clean_title = clean_title.replace("_", " ").title()
 
-                        st.markdown(f"**{clean_title}**")
-                        st.caption(f"{clean_text}") 
+                        st.markdown(f"**{clean_title}**{score_display}")
+                        st.caption(f"{clean_text[:350] + '...' if len(clean_text) > 350 else clean_text}") 
                         st.divider()
                 
-                # --- MOVED BUTTON INSIDE THIS BLOCK ---
-                # This ensures the button only shows if we have data to work with.
+                # --- BUTTON LOGIC ---
                 st.markdown("---")
                 if st.button("Generate poem with voice", type="primary", use_container_width=True):
                 
@@ -246,17 +252,11 @@ if image_source:
                             temperature=temperature
                         )
                         
-                        # 2. CRITIQUE 
-                        st.write("Task: AI Critic Evaluation...")
-                        st.session_state.critique = st.session_state.rag_architect.evaluate_quality(
-                            st.session_state.narrative,
-                            st.session_state.generated_poem,
-                            poet_name=selected_poet_name
-                        )
+                        # REMOVED: Critique Logic Block
                         
-                        status.update(label="Poem Drafted & Verified!", state="complete", expanded=False)
+                        status.update(label="Poem Drafted!", state="complete", expanded=False)
 
-                    # 3. RENDER POEM
+                    # 2. RENDER POEM
                     if st.session_state.generated_poem:
                         clean_poem = st.session_state.generated_poem.replace("- ", "— ")
                     
@@ -265,17 +265,9 @@ if image_source:
                             unsafe_allow_html=True
                         )
                         
-                        # 4. SHOW CRITIQUE SCORECARD
-                        if st.session_state.critique:
-                            c = st.session_state.critique
-                            score = c.get('relevance_score', 0)
-                            
-                            with st.expander(f"AI Critic Score: {score}/5", expanded=False):
-                                st.caption(f"**Style Score:** {c.get('style_score', 0)}/5")
-                                st.caption(f"**Hallucinated:** {c.get('is_hallucinated', False)}")
-                                st.write(f"**Feedback:** {c.get('feedback', 'No feedback.')}")
+                        # REMOVED: Critique Scorecard Display
 
-                    # 5. AUDIO GENERATION
+                    # 3. AUDIO GENERATION
                     if AUDIO_AVAILABLE and st.session_state.generated_poem:
                         audio_placeholder = st.empty()
                         with audio_placeholder.status("Synthesizing Audio...", expanded=False) as audio_status:

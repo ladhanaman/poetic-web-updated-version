@@ -61,6 +61,7 @@ def retrieve_poems(query_narrative: str, top_k=3, namespace=None) -> List[Dict[s
         return []
 
     found_poems = []
+    print("\nTop chunckes using bi-encoder cosine similarity search:")
     print(f"Found {len(results['matches'])} matches.")
     
     for match in results['matches']:
