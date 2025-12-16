@@ -19,6 +19,31 @@ except ImportError:
 # --- Config ---
 st.set_page_config(layout="wide", page_title="Poetic Camera")
 
+is_logged_in = getattr(st.experimental_user, "is_logged_in", False)
+
+if not is_logged_in:
+    st.markdown("## Access Restricted")
+    st.write("Please sign in with Google to access the Poetic Camera.")
+    
+    if st.button("Sign in with Google", type="primary"):
+        # specific check to ensure the function exists before calling
+        if hasattr(st, "login"):
+            st.login()
+        else:
+            st.error("Error: Your Streamlit version is too old. Please run: pip install --upgrade streamlit")
+        
+    st.stop() # HALT execution here
+
+# Optional: Display User
+user_email = getattr(st.experimental_user, "email", "Unknown User")
+with st.sidebar:
+    st.write(f"**Logged in as:** {user_email}")
+    if st.button("Logout"):
+        if hasattr(st, "logout"):
+            st.logout()
+        else:
+            st.warning("Logout not supported in this version.")
+
 st.markdown("""
 <style>
     .stApp { background-color: #0e1117; color: #c9d1d9; }

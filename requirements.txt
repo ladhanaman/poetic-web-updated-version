@@ -5,7 +5,8 @@ google-generativeai
 typing-extensions
 Pillow
 edge-tts
-streamlit
+streamlit>=1.42.0
 watchdog
 gTTS
 cohere
+Authlib>=1.3.2

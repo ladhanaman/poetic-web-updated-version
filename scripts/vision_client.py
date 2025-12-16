@@ -7,12 +7,7 @@ from groq import Groq
 from PIL import Image
 
 load_dotenv()
-
-# --- CONFIGURATION ---
-# Engineering Tip: Define model IDs as constants at the top or in .env
-# This makes future updates a 1-line change.
 VISION_MODEL_ID = "meta-llama/llama-4-scout-17b-16e-instruct" 
-
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def analyze_image(image_file) -> str:
@@ -45,8 +40,8 @@ def analyze_image(image_file) -> str:
         user_prompt = """
         Analyze this image for a 19th-century poem. Identify:
         1. Mood: Single adjective.
-        2. Themes: 2-3 abstract concepts.
-        3. Concrete Nouns: 3-5 physical objects.
+        2. Themes: 2-4 abstract concepts.
+        3. Concrete Nouns: 3-6 physical objects.
 
         Return strictly this JSON:
         {
@@ -58,7 +53,7 @@ def analyze_image(image_file) -> str:
 
         # 4. API Call
         response = client.chat.completions.create(
-            model=VISION_MODEL_ID, # <--- Updated Reference
+            model=VISION_MODEL_ID,
             messages=[
                 {
                     "role": "system",

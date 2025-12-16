@@ -6,3 +6,4 @@ poetic cam.mov
 Manifest.md
 assets/
 git-commands
+.streamlit/secrets.toml
