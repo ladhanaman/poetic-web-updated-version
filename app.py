@@ -19,7 +19,7 @@ except ImportError:
 # --- Config ---
 st.set_page_config(layout="wide", page_title="Poetic Camera")
 
-is_logged_in = getattr(st.experimental_user, "is_logged_in", False)
+is_logged_in = getattr(st.user, "is_logged_in", False)
 
 if not st.user.is_logged_in:
     st.markdown("## 🔐 Access Restricted")
@@ -32,13 +32,28 @@ if not st.user.is_logged_in:
 
 # Optional: Show who is logged in in the sidebar
 with st.sidebar:
-    # UPDATED: Changed st.experimental_user to st.user
-    # Use .get() or check attribute to be safe, though .email is standard
-    user_email = st.user.email if hasattr(st.user, 'email') else "Unknown"
-    st.write(f"👤 **Logged in as:** {user_email}")
     
-    if st.button("Logout"):
+    # Get details
+    user_avatar = getattr(st.user, "picture", "https://www.gstatic.com/images/branding/product/1x/avatar_square_blue_512dp.png")
+    user_name = getattr(st.user, "name", "User")
+    user_email = getattr(st.user, "email", "")
+
+    # HTML for Circular Image with Name
+    st.markdown(f"""
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <img src="{user_avatar}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover;">
+            <div>
+                <p style="margin: 0; font-weight: bold;">{user_name}</p>
+                <p style="margin: 0; font-size: 0.8em; color: gray;">{user_email}</p>
+            </div>
+        </div>
+        <br>
+    """, unsafe_allow_html=True)
+
+    if st.button("Sign Out"):
         st.logout()
+
+    st.markdown("---")
 
 st.markdown("""
 <style>
