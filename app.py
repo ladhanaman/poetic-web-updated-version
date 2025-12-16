@@ -21,28 +21,24 @@ st.set_page_config(layout="wide", page_title="Poetic Camera")
 
 is_logged_in = getattr(st.experimental_user, "is_logged_in", False)
 
-if not is_logged_in:
-    st.markdown("## Access Restricted")
+if not st.user.is_logged_in:
+    st.markdown("## 🔐 Access Restricted")
     st.write("Please sign in with Google to access the Poetic Camera.")
     
     if st.button("Sign in with Google", type="primary"):
-        # specific check to ensure the function exists before calling
-        if hasattr(st, "login"):
-            st.login()
-        else:
-            st.error("Error: Your Streamlit version is too old. Please run: pip install --upgrade streamlit")
+        st.login()
         
     st.stop() # HALT execution here
 
-# Optional: Display User
-user_email = getattr(st.experimental_user, "email", "Unknown User")
+# Optional: Show who is logged in in the sidebar
 with st.sidebar:
-    st.write(f"**Logged in as:** {user_email}")
+    # UPDATED: Changed st.experimental_user to st.user
+    # Use .get() or check attribute to be safe, though .email is standard
+    user_email = st.user.email if hasattr(st.user, 'email') else "Unknown"
+    st.write(f"👤 **Logged in as:** {user_email}")
+    
     if st.button("Logout"):
-        if hasattr(st, "logout"):
-            st.logout()
-        else:
-            st.warning("Logout not supported in this version.")
+        st.logout()
 
 st.markdown("""
 <style>
