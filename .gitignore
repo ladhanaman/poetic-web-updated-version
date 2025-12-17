@@ -7,4 +7,4 @@ Manifest.md
 assets/
 git-commands
 .streamlit/secrets.toml
-.jpg
+*.jpg
