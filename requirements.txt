@@ -9,4 +9,8 @@ streamlit>=1.42.0
 watchdog
 gTTS
 cohere
+<<<<<<< HEAD
 Authlib==1.3.2
+=======
+Authlib==1.3.2
+>>>>>>> 0c5eb24 (requirenments update)
