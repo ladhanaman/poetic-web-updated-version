@@ -2,6 +2,7 @@ import streamlit as st
 import os
 import time
 from PIL import Image
+import tempfile
 
 # Internal Script Imports
 from scripts.architect import RAGArchitect
@@ -72,13 +73,16 @@ def run_vision_cached(image_file):
     Caches the expensive vision analysis call so reruns (like changing sliders)
     don't re-trigger the Llama Vision model.
     """
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+        temp_file.write(image_file.getbuffer())
+        temp_filename = temp_file.name
+
     try:
-        # Save to temp file for the vision client to read
-        with open("temp_input.jpg", "wb") as f:
-            f.write(image_file.getbuffer())
-        return analyze_image("temp_input.jpg")
-    except Exception as e:
-        return f"Error: {e}"
+        analysis_result = analyze_image(temp_filename)
+    finally:
+        os.remove(temp_filename)
+
+    return analysis_result
 
 # --- Session State Initialization ---
 # REMOVED: 'critique' from keys

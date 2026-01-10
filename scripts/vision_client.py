@@ -7,7 +7,7 @@ from groq import Groq
 from PIL import Image
 
 load_dotenv()
-VISION_MODEL_ID = "meta-llama/llama-4-scout-17b-16e-instruct" 
+VISION_MODEL_ID = os.getenv("VISION_MODEL_ID", "meta-llama/llama-4-scout-17b-16e-instruct")
 client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
 def analyze_image(image_file) -> str:
