@@ -1,10 +1,11 @@
+# Log files
+*.log
+
+# Temporary files
+temp_input.jpg
+
+# Environment variables
 .env
-venv/
+
+# Python cache
 __pycache__/
-.DS_Store
-poetic cam.mov
-Manifest.md
-assets/
-git-commands
-.streamlit/secrets.toml
-*.jpg

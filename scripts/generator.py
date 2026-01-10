@@ -82,7 +82,7 @@ def generate_poem(vision_narrative: str, reference_poems: List[Dict], poet_name:
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            model="llama-3.3-70b-versatile",
+            model=os.getenv("GENERATOR_MODEL_ID", "llama-3.3-70b-versatile"),
             temperature=temperature,
             max_tokens=300, 
         )
