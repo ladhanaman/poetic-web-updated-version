@@ -1,12 +1,10 @@
 """Shared OpenAI client and model configuration."""
 
 from functools import lru_cache
-import os
 
-from dotenv import load_dotenv
 from openai import OpenAI
 
-load_dotenv()
+from scripts.config import get_setting
 
 DEFAULT_OPENAI_MODEL = "gpt-5.6-luna"
 DEFAULT_OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
@@ -15,8 +13,7 @@ DEFAULT_OPENAI_EMBEDDING_DIMENSIONS = 768
 
 def _setting(name: str, default: str) -> str:
     """Return a non-empty environment setting or its default value."""
-    value = os.getenv(name, "").strip()
-    return value or default
+    return get_setting(name, default)
 
 
 def _integer_setting(name: str, default: int) -> int:
@@ -75,11 +72,11 @@ def sampling_parameters(
 @lru_cache(maxsize=1)
 def get_openai_client() -> OpenAI:
     """Create and cache the OpenAI client after validating its API key."""
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    api_key = get_setting("OPENAI_API_KEY")
     if not api_key:
         raise RuntimeError(
-            "OPENAI_API_KEY is not configured. Add it to the environment before "
-            "calling OpenAI."
+            "OPENAI_API_KEY is not configured. Add it to the environment, .env, "
+            "or Streamlit secrets before calling OpenAI."
         )
 
     return OpenAI(api_key=api_key)

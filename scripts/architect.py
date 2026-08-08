@@ -1,9 +1,8 @@
 import os
 import cohere
 from typing import List, Dict, Any
-from dotenv import load_dotenv
 
-load_dotenv()
+from scripts.config import get_setting
 
 class RAGArchitect:
     """
@@ -14,7 +13,7 @@ class RAGArchitect:
     """
 
     def __init__(self):
-        self.api_key = os.getenv("COHERE_API_KEY")
+        self.api_key = get_setting("COHERE_API_KEY")
         if not self.api_key:
             print("[WARNING] COHERE_API_KEY missing. Reranker will fail.")
             

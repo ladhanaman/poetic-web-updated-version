@@ -1,21 +1,25 @@
 import os
 from typing import List, Dict, Any
-from dotenv import load_dotenv
 from pinecone import Pinecone
 
+from scripts.config import get_setting
 from scripts.openai_client import (
     OPENAI_EMBEDDING_DIMENSIONS,
     OPENAI_EMBEDDING_MODEL,
     get_openai_client,
 )
 
-load_dotenv()
-
 # --- Configuration ---
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
+PINECONE_API_KEY = get_setting("PINECONE_API_KEY")
+
+if not PINECONE_API_KEY:
+    raise RuntimeError(
+        "PINECONE_API_KEY is not configured. Add it to the environment, .env, "
+        "or Streamlit secrets before starting retrieval."
+    )
 
 # Best Practice: Fallback to v2 if .env is missing, but prefer env var
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "poetic-camera-v2")
+PINECONE_INDEX_NAME = get_setting("PINECONE_INDEX_NAME", "poetic-camera-v2")
 
 # Initialize Systems
 print(f"Connecting to Pinecone Index: {PINECONE_INDEX_NAME}...")

@@ -3,7 +3,6 @@ import json
 import base64
 import io
 from typing import BinaryIO, Union
-from dotenv import load_dotenv
 from PIL import Image
 
 from scripts.openai_client import (
@@ -12,7 +11,6 @@ from scripts.openai_client import (
     sampling_parameters,
 )
 
-load_dotenv()
 VISION_MODEL_ID = OPENAI_VISION_MODEL
 
 ImageSource = Union[str, os.PathLike[str], BinaryIO]

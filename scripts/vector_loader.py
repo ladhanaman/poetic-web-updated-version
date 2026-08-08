@@ -3,20 +3,18 @@ import os
 import argparse
 import time
 from typing import List, Dict, Any
-from dotenv import load_dotenv
 from pinecone import Pinecone
 
+from scripts.config import get_setting
 from scripts.openai_client import (
     OPENAI_EMBEDDING_DIMENSIONS,
     OPENAI_EMBEDDING_MODEL,
     get_openai_client,
 )
 
-load_dotenv()
-
 # --- CONFIGURATION ---
-PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME") # Picked up from .env
+PINECONE_API_KEY = get_setting("PINECONE_API_KEY")
+PINECONE_INDEX_NAME = get_setting("PINECONE_INDEX_NAME", "poetic-camera-v2")
 
 if not PINECONE_API_KEY:
     raise ValueError("Missing PINECONE_API_KEY! Check your .env file.")
