@@ -2,16 +2,20 @@ import os
 import json
 import time
 import argparse
-from groq import Groq
 from dotenv import load_dotenv
 
+from scripts.openai_client import (
+    OPENAI_TEXT_MODEL,
+    get_openai_client,
+    sampling_parameters,
+)
+
 load_dotenv()
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-MODEL_NAME = "llama-3.3-70b-versatile"
+MODEL_NAME = OPENAI_TEXT_MODEL
 
 def get_dense_tags(poem_text):
     """
-    Uses the dense prompt strategy with the reliable Llama 3.3 70B model.
+    Uses the dense prompt strategy with the configured OpenAI text model.
     """
     system_prompt = """
     You are a literary scholar analyzing Emily Dickinson. Prioritize deep subtext, hidden metaphors, and emotional arc in your analysis. Your final output MUST be a JSON object conforming strictly to the schema.
@@ -34,16 +38,20 @@ def get_dense_tags(poem_text):
     {poem_text}
     """
     try:
-        completion = client.chat.completions.create(
+        completion = get_openai_client().chat.completions.create(
             model=MODEL_NAME,
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            temperature=0.1, 
-            response_format={"type": "json_object"} 
+            response_format={"type": "json_object"},
+            **sampling_parameters(OPENAI_TEXT_MODEL, max_completion_tokens=400),
         )
-        return json.loads(completion.choices[0].message.content)
+        content = completion.choices[0].message.content
+        if not content:
+            raise ValueError("OpenAI returned an empty metadata response.")
+
+        return json.loads(content)
         
     except Exception as e:
         print(f"Error extracting tags: {e}")

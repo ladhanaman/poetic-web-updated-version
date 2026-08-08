@@ -4,26 +4,29 @@ import argparse
 import time
 from typing import List, Dict, Any
 from dotenv import load_dotenv
-from pinecone import Pinecone, ServerlessSpec
-import google.generativeai as genai
+from pinecone import Pinecone
+
+from scripts.openai_client import (
+    OPENAI_EMBEDDING_DIMENSIONS,
+    OPENAI_EMBEDDING_MODEL,
+    get_openai_client,
+)
 
 load_dotenv()
 
 # --- CONFIGURATION ---
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME") # Picked up from .env
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-if not PINECONE_API_KEY or not GEMINI_API_KEY:
-    raise ValueError("Missing API Keys! Check your .env file.")
+if not PINECONE_API_KEY:
+    raise ValueError("Missing PINECONE_API_KEY! Check your .env file.")
 
 # Initialize Clients
 print(f"Connecting to Pinecone Index: {PINECONE_INDEX_NAME}...")
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index(PINECONE_INDEX_NAME)
 
-print("Connecting to Gemini...")
-genai.configure(api_key=GEMINI_API_KEY)
+print(f"Using OpenAI embedding model: {OPENAI_EMBEDDING_MODEL}")
 
 def build_semantic_string(poem_obj: Dict[str, Any]) -> str:
     """
@@ -64,12 +67,12 @@ def load_data(json_file: str, namespace: str):
         
         # 1. Generate Embedding
         try:
-            response = genai.embed_content(
-                model="models/text-embedding-004",
-                content=semantic_text,
-                task_type="retrieval_document" 
+            response = get_openai_client().embeddings.create(
+                model=OPENAI_EMBEDDING_MODEL,
+                input=semantic_text,
+                dimensions=OPENAI_EMBEDDING_DIMENSIONS,
             )
-            embedding = response['embedding']
+            embedding = response.data[0].embedding
         except Exception as e:
             print(f" [!] Embedding failed for ID {poem.get('id')}: {e}")
             continue

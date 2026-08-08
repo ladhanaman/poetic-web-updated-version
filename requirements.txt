@@ -1,7 +1,6 @@
-groq
+openai>=1.0.0
 python-dotenv
 pinecone>=3.0.0
-google-generativeai
 typing-extensions
 Pillow
 edge-tts

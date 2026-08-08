@@ -2,13 +2,17 @@ import os
 from typing import List, Dict, Any
 from dotenv import load_dotenv
 from pinecone import Pinecone
-import google.generativeai as genai
+
+from scripts.openai_client import (
+    OPENAI_EMBEDDING_DIMENSIONS,
+    OPENAI_EMBEDDING_MODEL,
+    get_openai_client,
+)
 
 load_dotenv()
 
 # --- Configuration ---
 PINECONE_API_KEY = os.getenv("PINECONE_API_KEY")
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Best Practice: Fallback to v2 if .env is missing, but prefer env var
 PINECONE_INDEX_NAME = os.getenv("PINECONE_INDEX_NAME", "poetic-camera-v2")
@@ -18,18 +22,18 @@ print(f"Connecting to Pinecone Index: {PINECONE_INDEX_NAME}...")
 pc = Pinecone(api_key=PINECONE_API_KEY)
 index = pc.Index(PINECONE_INDEX_NAME)
 
-print("Connecting to Gemini Embeddings...")
-genai.configure(api_key=GEMINI_API_KEY)
+print("Connecting to OpenAI Embeddings...")
+print(f"Using OpenAI embedding model: {OPENAI_EMBEDDING_MODEL}")
 
 def get_embedding(text: str) -> List[float]:
-    """Generates embedding using Gemini to match your database schema."""
+    """Generate a query embedding compatible with the Pinecone index."""
     try:
-        result = genai.embed_content(
-            model="models/text-embedding-004",
-            content=text,
-            task_type="retrieval_query" 
+        response = get_openai_client().embeddings.create(
+            model=OPENAI_EMBEDDING_MODEL,
+            input=text,
+            dimensions=OPENAI_EMBEDDING_DIMENSIONS,
         )
-        return result['embedding']
+        return response.data[0].embedding
     except Exception as e:
         print(f"Embedding Error: {e}")
         return []

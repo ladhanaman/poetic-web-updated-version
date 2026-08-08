@@ -67,13 +67,13 @@ st.markdown("""
 
 # --- CACHING FUNCTIONS ---
 @st.cache_data(show_spinner=False)
+
 def run_vision_cached(image_file):
     """
     Caches the expensive vision analysis call so reruns (like changing sliders)
-    don't re-trigger the Llama Vision model.
+    don't re-trigger the OpenAI vision model.
     """
     try:
-        # Save to temp file for the vision client to read
         with open("temp_input.jpg", "wb") as f:
             f.write(image_file.getbuffer())
         return analyze_image("temp_input.jpg")
@@ -81,13 +81,12 @@ def run_vision_cached(image_file):
         return f"Error: {e}"
 
 # --- Session State Initialization ---
-# REMOVED: 'critique' from keys
 keys = ['narrative', 'retrieved_items', 'generated_poem', 'audio_bytes', 'last_upload_id']
 for k in keys:
     if k not in st.session_state:
         st.session_state[k] = None
 
-# Initialize Architect (Lazy Loading)
+# Initialize Architect
 if 'rag_architect' not in st.session_state:
     st.session_state.rag_architect = RAGArchitect()
 
@@ -97,7 +96,6 @@ if 'rag_architect' not in st.session_state:
 with st.sidebar:
 
     st.header("Poet Persona")
-    # Mapping UI Name -> Pinecone Namespace
     poet_map = {
         "Emily Dickinson": "dickinson",
         "Percy Bysshe Shelley": "shelley",
@@ -107,7 +105,7 @@ with st.sidebar:
     selected_poet_name = st.selectbox(
         "Choose your Muse",
         options=list(poet_map.keys()),
-        index=0 # Default to Dickinson
+        index=0
     )
     
     # Get the actual namespace string (e.g., 'shelley')
@@ -123,7 +121,7 @@ with st.sidebar:
         key="input_mode" 
     )
     
-    # Upload Logic (Stays in Sidebar because it doesn't need width)
+    # Upload Logic
     sidebar_upload = None
     if input_method == "Upload":
         sidebar_upload = st.file_uploader("Upload Image", type=["jpg", "png", "jpeg"])
@@ -138,7 +136,7 @@ with st.sidebar:
 # MAIN LOGIC
 # ==========================================
 st.title("Poetic Camera")
-# UPDATED: Reflected new mode
+# Reflected new mode
 st.caption("System Status: Online | Mode: Production RAG (Cohere Powered)")
 
 # --- CAMERA HANDLING ---
@@ -189,7 +187,7 @@ if image_source:
             # 1. Vision Analysis
             if not st.session_state.narrative:
                 with st.status("[SYSTEM] Initializing Vision Pipeline...", expanded=True) as s:
-                    st.write("Task: Image Analysis (Llama 3.2 Vision)")
+                    st.write("Task: Image Analysis (OpenAI Vision)")
                     
                     # Capture the result
                     result = run_vision_cached(image_source) 

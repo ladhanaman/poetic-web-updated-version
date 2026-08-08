@@ -2,18 +2,26 @@ import os
 import json
 import base64
 import io
+from typing import BinaryIO, Union
 from dotenv import load_dotenv
-from groq import Groq
 from PIL import Image
 
-load_dotenv()
-VISION_MODEL_ID = "meta-llama/llama-4-scout-17b-16e-instruct" 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+from scripts.openai_client import (
+    OPENAI_VISION_MODEL,
+    get_openai_client,
+    sampling_parameters,
+)
 
-def analyze_image(image_file) -> str:
+load_dotenv()
+VISION_MODEL_ID = OPENAI_VISION_MODEL
+
+ImageSource = Union[str, os.PathLike[str], BinaryIO]
+
+
+def analyze_image(image_file: ImageSource | None) -> str:
     """
     Takes a Streamlit UploadedFile (or file-like object), 
-    processes it, and analyzes it using Groq Vision.
+    processes it, and analyzes it using OpenAI Vision.
     """
     
     if image_file is None:
@@ -52,7 +60,7 @@ def analyze_image(image_file) -> str:
         """
 
         # 4. API Call
-        response = client.chat.completions.create(
+        response = get_openai_client().chat.completions.create(
             model=VISION_MODEL_ID,
             messages=[
                 {
@@ -76,11 +84,15 @@ def analyze_image(image_file) -> str:
                 }
             ],
             response_format={"type": "json_object"},
-            temperature=0.5,
+            **sampling_parameters(VISION_MODEL_ID, max_completion_tokens=200),
         )
         
         # 5. Parse
-        result = json.loads(response.choices[0].message.content)
+        content = response.choices[0].message.content
+        if not content:
+            raise ValueError("OpenAI returned an empty vision response.")
+
+        result = json.loads(content)
         
         # 6. Construct String
         noun_str = ", ".join(result.get('concrete_nouns', []))
@@ -96,7 +108,7 @@ def analyze_image(image_file) -> str:
         print(f"[ERROR] Vision Bridge Failed: {e}")
         # Fallback suggestion for the logs
         if "model_decommissioned" in str(e):
-            print("CRITICAL: The model ID is invalid. Check Groq Console for the latest model.")
+            print("CRITICAL: The model ID is invalid. Check the OpenAI model access for the latest model.")
         return f"ERROR: {str(e)}"
 
 if __name__ == "__main__":

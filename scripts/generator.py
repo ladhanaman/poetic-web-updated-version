@@ -1,11 +1,10 @@
-import os
-from typing import List, Dict
-from groq import Groq
-from dotenv import load_dotenv
+from typing import Any, Dict, List
 
-load_dotenv()
-
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
+from scripts.openai_client import (
+    OPENAI_TEXT_MODEL,
+    get_openai_client,
+    sampling_parameters,
+)
 
 # --- STYLE CONFIGURATION ---
 POET_PROMPTS = {
@@ -38,7 +37,12 @@ POET_PROMPTS = {
     """
 }
 
-def generate_poem(vision_narrative: str, reference_poems: List[Dict], poet_name: str, temperature: float = 0.6) -> str:
+def generate_poem(
+    vision_narrative: str,
+    reference_poems: List[Dict[str, Any]],
+    poet_name: str,
+    temperature: float = 0.6,
+) -> str:
     """
     Dynamically generates a poem based on the selected poet's persona.
     """
@@ -77,18 +81,25 @@ def generate_poem(vision_narrative: str, reference_poems: List[Dict], poet_name:
     """
     
     try:
-        chat_completion = client.chat.completions.create(
+        chat_completion = get_openai_client().chat.completions.create(
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
             ],
-            model="llama-3.3-70b-versatile",
-            temperature=temperature,
-            max_tokens=300, 
+            model=OPENAI_TEXT_MODEL,
+            **sampling_parameters(
+                OPENAI_TEXT_MODEL,
+                temperature=temperature,
+                max_completion_tokens=600,
+            ),
         )
-        
-        return chat_completion.choices[0].message.content
 
-    except Exception as e:
-        print(f"Generation Failed: {e}")
+        content = chat_completion.choices[0].message.content
+        if not content:
+            raise ValueError("OpenAI returned an empty poem response.")
+
+        return content
+
+    except Exception as exc:
+        print(f"Generation Failed: {exc}")
         return "The camera is blind,\nThe words wont find,\nA path to you."
